@@ -1,0 +1,32 @@
+.THIS table.slds-table{  
+  table-layout: fixed ;
+  width: 100% ;
+  
+}
+.THIS .MainHeading{
+    box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+    background: white;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+}
+.THIS .header{
+    font-size: 1.4rem;
+    font-weight: 600;
+    padding: 1rem;
+}
+.THIS .Body{
+    padding:5rem 1rem;
+    
+}
+.THIS .footer{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.5rem;
+    box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+    background: white;
+}

@@ -1,0 +1,270 @@
+<aura:component controller="insertleadrecords"  
+                implements="lightning:isUrlAddressable,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,lightning:actionOverride" access="global">
+    
+    <aura:attribute name="createAcc" type="Account" default="{'sObjectType' : 'Account','Name':''}"/>
+    <aura:attribute name="objName" type="String" default="Account"/>
+    <aura:attribute name="fldName" type="String" default="Rating"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="showError" type="boolean" default="false"/>
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="cardNumber" type="String" />
+    <aura:attribute name="cvv" type="String" />
+    <aura:attribute name="expiryDate" type="Date" />
+    <aura:attribute name="isModalOpen3" type="Boolean" default="false" />
+    <aura:attribute name="editCon" type="Contact" default="{}" />
+    <aura:attribute name="isEditModalOpen" type="Boolean" default="false" />
+    
+    <aura:attribute name="salutationOptions" type="List" default="[
+                                                                  {'label': 'Mr.', 'value': 'Mr.'},
+                                                                  {'label': 'Ms.', 'value': 'Ms.'},
+                                                                  {'label': 'Mrs.', 'value': 'Mrs.'},
+                                                                  {'label': 'Dr.', 'value': 'Dr.'},
+                                                                  {'label': 'Prof.', 'value': 'Prof.'},
+                                                                  ]"/>
+    <aura:attribute name="createCon" type="Contact" default="{'sObjectType' : 'Contact','Name':''}"/>
+    
+    <!--These Two lines for list of contact -->
+    <aura:attribute name="contacts" type="list"/>
+    <aura:if isTrue="{!v.showError}">
+        <div class="slds-notify_container" style="margin-top:1%;text-align:center;">
+            <div class="slds-notify slds-notify_toast slds-theme_error" role="alert">
+                <span class="slds-assistive-text">Error</span>
+                <div class="notify__content slds-grid">
+                    <span class="slds-icon__container ">
+                        <span class="slds-assistive-text">Alert</span>
+                    </span>
+                    <div class="slds-col slds-align-middle">
+                        <h2 class="slds-text-heading- -medium ">
+                            <center><b>{!v.errorMessage}</b></center>
+                        </h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    <div >
+        <div class="MainHeading">
+            <div class="header">
+                Create Account Records</div>
+            
+        </div>
+        <div class="Body">
+            
+            <div style="display:flex; gap:2rem">
+                <div style="flex:1">
+                    <lightning:input  type="Text" label="Account Name" value="{!v.createAcc.Name}"/>
+                </div>
+                <div style="flex:1">
+                    <lightning:input type="Text" label="Account Number" value="{!v.createAcc.AccountNumber}"/>
+                </div>
+            </div>
+            
+            <br/>
+            <div style="display:flex; gap:2rem">
+                <div style="flex:1">
+                    <lightning:input type="Email" name="email2" value="{!v.createAcc.Email}" label="Email ID"/>
+                </div>
+                <div style="flex:1">
+                    <lightning:input type="Phone" label="Phone Number" value="{!v.createAcc.Phone}"/>
+                </div>
+            </div>
+            <br/>
+            <div style="display:flex; gap:2rem">
+                <div style="flex:1">
+                    <lightning:input type="Curreny" name="email2" value="{!v.createAcc.Amoun__c}" label="Amount"/>
+                </div>
+                <div style="flex:1">
+                    <lightning:input type="Long Text Area" label="Description" value="{!v.createAcc.Description}"/>
+                </div>
+            </div>
+            <br/>
+            <div style=" display:flex; justify-content:flex-end">
+                <lightning:button iconName="utility:new"   label="Add Contact" onclick="{! c.openModel}"/>    
+            </div>
+            <br/>
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered"  >
+                <tr style="background-color:#EAE8E3">
+                    <th>S No.</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Email Id</th>
+                    <th>Mobile</th>
+                    <th>Other Options</th>
+                </tr>
+                <aura:iteration items = "{!v.contacts}" var = "cntct" indexVar="index">
+                    <tr>
+                        <td>{!index}</td>
+                        <td>{!cntct.FirstName}</td>
+                        <td>{!cntct.LastName}</td>
+                        <td>{!cntct.Email}</td>
+                        <td>{!cntct.MobilePhone}</td>
+                        <td style="display:flex; gap:2rem;"> 
+                            <div  data-index="{!index}" onclick="{!c.editContact}">
+                            <lightning:buttonIcon iconName="utility:edit" size="Large"  alternativeText="Edit Contacts" title="Edit Contact" />
+                            </div>
+                            <div  data-index="{!index}" >
+                                <lightning:buttonIcon iconName="utility:delete" size="Large"  alternativeText="Edit Contacts" title="Edit Contact" onclick="{! c.deleteContact}"/>
+                            </div>
+                        </td>
+                    </tr>
+                </aura:iteration>
+                
+            </table>
+        </div>
+        <br/>
+        <aura:if isTrue="{!v.isModalOpen3}">
+            <div class="slds-modal slds-fade-in-open" aura:id="modal" role="dialog">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    
+                    <div class="slds-modal__container">
+                        <div class="slds-modal__header">
+                            <h1 class="slds-text-heading--medium">Enter Card Information</h1>
+                        </div>
+                        <div class="slds-modal__content slds-p-around-medium">
+                            <lightning:input type="text" value="{!v.cardNumber}" label ="Card Number"/>
+                            
+                            
+                            <lightning:input type="text" label ="CVV" value="{!v.cvv}" />
+                            
+                            
+                            <lightning:input type="date" label ="Expiry Date" value="{!v.expiryDate}"  />
+                            
+                            
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <button class="slds-button slds-button_neutral" onclick="{!c.closeModel3}">Cancel</button>
+                            <button class="slds-button slds-button_brand" onclick="{!c.saveCardInfo}">Save</button>
+                        </footer>
+                    </div>
+                </section>
+            </div>
+            <div class="slds-backdrop slds-backdrop--open"></div>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.isModalOpen3}">
+            <div class="slds-modal slds-fade-in-open custom-modal" aura:id="modal" role="dialog">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open custom-modal-section">
+                    <div class="slds-modal__container custom-modal-container">
+                        <header class="slds-modal__header custom-modal-header">
+                            <h2 class="slds-text-heading--medium">Enter Card Information</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium">
+                            <lightning:input type="text" class="slds-input custom-input" value="{!v.cardNumber}" label = "Card Number"/>
+                            <lightning:input type="text" class="slds-input custom-input" label = "CVV" value="{!v.cvv}" />
+                            <lightning:input type="date" class="slds-input custom-input" label = "Expiry Date" value="{!v.expiryDate}"  />
+                        </div>
+                        <footer class="slds-modal__footer custom-modal-footer">
+                            <button class="slds-button slds-button_neutral" onclick="{!c.closeModel3}">Cancel</button>
+                            <button class="slds-button slds-button_brand" onclick="{!c.saveCardInfo}">Save</button>
+                        </footer>
+                    </div>
+                </section>
+            </div>
+            <div class="slds-backdrop slds-backdrop--open custom-modal-backdrop"></div>
+        </aura:if>
+        
+        
+        
+        
+        
+        <aura:if isTrue="{!v.isEditModalOpen}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                
+                <div class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <div class="slds-modal__header">
+                            <h2>Edit Contact</h2>
+                        </div>
+                        <div class="slds-modal__content slds-p-around--medium">
+                            <div class="slds-p-around_small" style="background-color:white">
+                                <div style="display:flex; gap:2rem">
+                                    <div style="flex:1">
+                                        <lightning:inputName
+                                                             firstName="{!v.editCon.FirstName}"
+                                                             lastName="{!v.editCon.LastName}"
+                                                             salutation="{!v.editCon.Title}"
+                                                             options="{!v.salutationOptions}"
+                                                             required="true"
+                                                             />
+                                    </div>
+                                    
+                                    
+                                    <div style="flex:1">
+                                        <lightning:input type="Email" name="email2" value="{!v.editCon.Email}" label="Email ID"/>
+                                        <lightning:input type="Phone" label="Mobile" value="{!v.editCon.MobilePhone}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <button class="slds-button slds-button--neutral" onclick="{!c.cancelEdit}">Cancel</button>
+                            <button class="slds-button slds-button--brand" onclick="{!c.saveContact}">Save</button>
+                        </footer>
+                    </div>
+                    
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        
+        
+        
+        <aura:if isTrue="{!v.isModalOpen}">
+            
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeModel }" alternativeText="close" variant="bare-inverse"  class="slds-modal__close"/>
+                        
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Create Contact Records</h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-p-around_small" style="background-color:white">
+                        <div style="display:flex; gap:2rem">
+                            <div style="flex:1">
+                                <lightning:inputName
+                                                     label="Contact Name"
+                                                     firstName="{!v.createCon.FirstName}"
+                                                     lastName="{!v.createCon.LastName}"
+                                                     salutation="{!v.createCon.Title}"
+                                                     options="{!v.salutationOptions}"
+                                                     required="true"
+                                                     />
+                            </div>
+                            <div style="flex:1">
+                                <lightning:input type="Email" name="email2" value="{!v.createCon.Email}" label="Email ID"/>
+                                <lightning:input type="Phone" label="Mobile" value="{!v.createCon.MobilePhone}"/>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closeModel }"/>
+                        <lightning:button variant="brand"
+                                          label="Save"
+                                          title="Save"
+                                          onclick="{!c.submitDetails}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        
+        
+        
+        
+        
+        <br/>
+        <div class="footer">
+            <div style="display:flex;justify-content: center; align-items:center;gap:1rem">
+                <lightning:button label="Save" iconPosition="left" variant="brand" onclick="{!c.doSave}"/>
+                <lightning:button label="Cancel" iconPosition="right" variant="destructive" onclick="{!c.docancel}"/>
+            </div>
+        </div>
+    </div>
+</aura:component>

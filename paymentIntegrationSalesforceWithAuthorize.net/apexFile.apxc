@@ -1,0 +1,121 @@
+public class insertleadrecords {
+    public static list<Contact> lstCntct {get;set;}
+    public insertleadrecords(){
+        lstCntct = new list<Contact>();
+    }
+
+    @AuraEnabled
+    public static void createAccount(Account account, List<Contact> contacts) {
+        try {
+            // Insert the account
+            insert account;
+
+            // Associate the contacts with the account
+            for (Contact c : contacts) {
+                c.AccountId = account.Id;
+            }
+            insert contacts;
+
+            // Return the newly created account with its associated contacts
+           return ;
+        } catch (Exception e) {
+            system.debug('hello word');
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+
+    
+   @AuraEnabled public static Contact contactList(Contact con, list<Contact> contacts){
+      //  lstCntct.add(con);
+       if(!contacts.isEmpty()){
+           for(Contact c: contacts){
+               if( (c.Email == con.Email) && (!String.isBlank(con.Email))){
+                   throw new AuraHandledException('NSFW name detected.');
+               }
+               else if(c.Name == con.Name){
+                   throw new AuraHandledException('NSFW name detected.');
+               }
+           }
+       }
+        return con;
+    }
+    @AuraEnabled  public static Map<String, Object> createPayment(String Name, Decimal amount1, String cardNumber, Date expirationDate,String cvv) {
+        Map<String, Object> result = new Map<String, Object>();
+        system.debug(amount1);
+        String DateExpiration = expirationDate.year() + '-' + expirationDate.month();
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint('https://apitest.authorize.net/xml/v1/request.api');
+        req.setMethod('POST');
+        req.setHeader('Content-Type', 'application/xml');
+        
+        String xmlPayload = '<createTransactionRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd"><merchantAuthentication><name>5gQ26Ncge</name><transactionKey>8w293n648JcR4tPq</transactionKey></merchantAuthentication><refId>123456</refId><transactionRequest><transactionType>authCaptureTransaction</transactionType><amount>'+amount1+'</amount><payment><creditCard><cardNumber>'+cardNumber+'</cardNumber><expirationDate>'+DateExpiration+'</expirationDate><cardCode>'+cvv+'</cardCode></creditCard></payment><order><invoiceNumber>INV-12345</invoiceNumber><description>Product Description</description></order><lineItems><lineItem><itemId>1</itemId><name>vase</name><description>Cannes logo </description><quantity>18</quantity><unitPrice>45.00</unitPrice></lineItem></lineItems><tax><amount>4.26</amount><name>level2 tax name</name><description>level2 tax</description></tax><duty><amount>8.55</amount><name>duty name</name><description>duty description</description></duty><shipping><amount>4.26</amount><name>level2 tax name</name><description>level2 tax</description></shipping><poNumber>456654</poNumber><customer><id>99999456654</id></customer><billTo><firstName> </firstName><lastName>'+Name+'</lastName><company>Souveniropolis</company><address>14 Main Street</address><city>Pecan Springs</city><state>TX</state><zip>44628</zip><country>US</country></billTo><shipTo><firstName>Trilok</firstName><lastName>Jain</lastName><company>Thyme for Tea</company><address>12 Main Street</address><city>Pecan Springs</city><state>TX</state><zip>44628</zip><country>US</country></shipTo><customerIP>192.168.1.1</customerIP><userFields><userField><name>MerchantDefinedFieldName1</name><value>MerchantDefinedFieldValue1</value></userField><userField><name>favorite_color</name><value>blue</value></userField></userFields><processingOptions><isSubsequentAuth>true</isSubsequentAuth></processingOptions><subsequentAuthInformation><originalNetworkTransId>123456789NNNH</originalNetworkTransId><originalAuthAmount>45.00</originalAuthAmount><reason>resubmission</reason></subsequentAuthInformation><authorizationIndicatorType><authorizationIndicator>final</authorizationIndicator></authorizationIndicatorType></transactionRequest></createTransactionRequest>';        req.setBody(xmlPayload);
+        
+        Http http = new Http();
+        HttpResponse res = http.send(req);
+        String statusCode='';
+        String transId='';
+        if (res != null && res.getStatusCode() == 200) {
+            Dom.Document doc = new Dom.Document();
+            doc.load(res.getBody());
+            Dom.XMLNode rootNode = doc.getRootElement();
+            system.debug('rootNode--->' + rootNode);
+            for (DOM.XmlNode node : rootNode.getChildren()){
+                if(node.getName() == 'messages'){
+                    for (DOM.XmlNode node2 : node.getChildren()){
+                        if(node2.getName() == 'resultCode'){
+                            statusCode = node2.getText();
+                        }
+                    }
+                }
+            }
+            
+            
+            if (statusCode == 'Ok') {
+                String transactionId = '';
+                for (DOM.XmlNode node : rootNode.getChildren()){
+                    if(node.getName() == 'transactionResponse'){
+                        for (DOM.XmlNode node2 : node.getChildren()){
+                            if(node2.getName() == 'transId'){
+                                transactionId = node2.getText();
+                                transId  = transactionId;
+                            }
+                        }
+                    }
+                }
+                result.put('success', true);
+                result.put('transactionId', transactionId);
+            } else {
+                String errorMessage = '';
+                system.debug('rootNode--->' + rootNode);
+                for (DOM.XmlNode node : rootNode.getChildren()){
+                    if(node.getName() == 'messages'){
+                        for (DOM.XmlNode node2 : node.getChildren()){
+                            if(node2.getName() == 'message'){
+                                system.debug(node2.getText());
+                                errorMessage = node2.getText();
+                            }
+                        }
+                    }
+                }
+                result.put('success', false);
+                result.put('errorMessage', errorMessage);
+            }
+        } else {
+            result.put('success', false);
+            result.put('errorMessage', 'Failed to connect to Authorize.Net API');
+        }
+        Account account = [Select id,Name,Transaction_ID__c from Account order by CreatedDate desc limit 1 ];
+        for(String str : result.keySet()){
+            if(str =='transactionId'){
+                account.Transaction_ID__c = transId;
+               
+            } 
+         }
+        update account;
+        system.debug('trans IId---->'+ result);
+        return result;
+    }
+     
+    
+}
